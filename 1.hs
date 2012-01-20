@@ -34,20 +34,21 @@ divBy num divisor list =
 			(num, list)
 	
 divisors n =
-	case divisorList n of
-		(1, list) -> list
-		(n, []) -> [n]
-	where
-		divisorList n = foldl (\(value, list) prime -> divBy value prime list) (n, []) (getDivisorList n)
+	getDivisors n genPrimes
+		where
+			getDivisors 1 _ = []
+			getDivisors n primeList@(x:xs) | n `mod` x == 0 =
+				x : getDivisors (n `div` x) primeList
+			getDivisors n (x:xs) = getDivisors n xs
 
 -- 4)
 
 palindrome xs = reverse xs == xs
 
-pals = (map (\x -> read x :: Int) . filter palindrome . map show) [ x * y | x <- [100..999], y <- [100..999]]
+pals = (map (\x -> read x :: Int) . filter palindrome . map show . sort) [ x * y | x <- [100..999], y <- [100..999]]
 
 largestPal = last pals
--- 580085
+-- 906609
 
 -- 5)
 
@@ -63,9 +64,8 @@ smallestDividedBy20 = product $ foldr1 (\nums acc -> if head nums == head acc th
 sumOfSquares n = sum $ (map (^2)) [1..n]
 squareOfSums n = sum [1..n] * sum [1..n]
 
-diffFirst100 = map (\n -> squareOfSums n - sumOfSquares n) [1..100]
-
--- 0,4,22,70,170,350,644,1092,1740,2640,3850,5434,7462,10010,13160,17000,21624,27132,33630,41230,50050,60214,71852,85100,100100,117000,135954,157122,180670,206770,235600,267344,302192,340340,381990,427350,476634,530062,587860,650260,717500,789824,867482,950730,1039830,1135050,1236664,1344952,1460200,1582700,1712750,1850654,1996722,2151270,2314620,2487100,2669044,2860792,3062690,3275090,3498350,3732834,3978912,4236960,4507360,4790500,5086774,5396582,5720330,6058430,6411300,6779364,7163052,7562800,7979050,8412250,8862854,9331322,9818120,10323720,10848600,11393244,11958142,12543790,13150690,13779350,14430284,15104012,15801060,16521960,17267250,18037474,18833182,19654930,20503280,21378800,22282064,23213652,24174150,25164150]
+-- squareOfSums 100 - sumOfSquares 100
+-- 25164150
 
 -- 7)
 
@@ -145,7 +145,41 @@ biggestOf400 = maximumBy productVal mappedNums
 -- ((6,12),("diagonalLeft",[89,94,97,87],70600674))
 
 -- 12)
-triangleNumbers = map (\n -> sum [1..n]) [1..]
-triangleNumbersWithDivisors = map (\n -> (n, divisors n)) triangleNumbers
+--
+--
+
+triangleNumber n | odd n =
+	((n + 1) `div` 2) * n
+triangleNumber n | even n =
+	(n + 1)  * (n `div` 2)
+
+-- isTriangle n = isTriangleForEven n || isTriangleForOdd n
+
+triangleNumbers = map triangleNumber [1..]
+
+-- triangleNumbersWithDivisors min = (\n -> (n, divisors n)) $ head . filter (\n -> length (divisors n) > min) $ triangleNumbers
 
 
+comboList :: Int -> [Integer] -> [[Integer]]
+
+comboList remaining (x:[]) = [ replicate remaining x ]
+comboList remaining (x:xs) = 
+	concat [ map (\list -> (replicate count x) ++ list) (comboList (remaining - count) xs) | count <- [0..remaining]]
+
+cleanComboList :: Int -> [Integer] -> [[Integer]]
+cleanComboList remaining list =
+	let optionList = comboList remaining list in
+		filter (\options -> (last list) `elem` options) optionList
+
+isTriangleNum n = (==) n $ last $ takeWhile (\x -> x <= n) triangleNumbers
+
+mapLists :: Int -> [Integer] -> [Integer] -> [[Integer]]
+mapLists n (x:xs) cached =
+	let subList = cached ++ [x] in
+		cleanComboList n subList ++ mapLists n xs subList
+
+take 150  $ mapLists 20  genPrimes []
+head . filter (\list -> (isTriangleNum . product) list) $ mapLists 20  genPrimes []
+
+-- too slow to use...
+bboy = head . map (\l -> (l, product l)) . filter (\list -> (isTriangleNum . product) list) $ mapLists 501  genPrimes []

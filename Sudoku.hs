@@ -18,7 +18,10 @@ toStringRow = unwords . map maybeToInt
 		maybeToInt (Just n) = show n
 
 showSolution :: String -> String
-showSolution = show . fromStringRows
+showSolution = show . solve . fromStringRows
+
+solve :: SudokuPuzzle -> SudokuPuzzle
+solve = id
 
 fromStringRow :: String -> [Maybe Int]
 fromStringRow = map intToMaybe . map (\char -> read char :: Int) . words
